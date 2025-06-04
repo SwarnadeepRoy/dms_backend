@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio --config ./drizzle.config.ts"
   },
   "dependencies": {
+    "@azure/core-rest-pipeline": "^1.20.0",
     "@azure/identity": "^4.10.0",
     "@azure/storage-blob": "^12.27.0",
     "@hono/node-server": "^1.14.3",
