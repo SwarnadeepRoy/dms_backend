@@ -27,8 +27,8 @@ jobs:
         run: |
           corepack enable pnpm
           pnpm install
-          pnpm run build --if-present
-          pnpm run test --if-present
+          pnpm run build
+          pnpm run test
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
