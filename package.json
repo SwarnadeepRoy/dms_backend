@@ -22,6 +22,7 @@
     "@hono/zod-openapi": "^0.19.8",
     "@hono/zod-validator": "^0.4.1",
     "@neondatabase/serverless": "^1.0.0",
+    "@scalar/core": "^0.9.1",
     "@scalar/hono-api-reference": "^0.9.1",
     "dotenv": "^16.5.0",
     "drizzle-kit": "0.31.1",
