@@ -6,101 +6,120 @@ import "zod-openapi/extend";
 import { z } from "zod";
 import { swaggerUI } from "@hono/swagger-ui";
 import { describeRoute, openAPISpecs } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { resolver } from "hono-openapi/zod";
+import { HTTPException } from "hono/http-exception";
+import { serve } from "@hono/node-server";
+import dotenv from "dotenv";
+import { blobMiddleware, dbMiddleware } from "./middlewares.js";
+dotenv.config();
 
-// import member from "./member";
-// import manager from "./manager";
-
+import files from "./files.js";
+import members from "./members.js";
+import workspace from "./workspace.js";
 
 const app = new Hono();
+
+app.use(blobMiddleware);
+app.use(dbMiddleware);
+
 app.use(logger());
 
 app.get("/swagger", swaggerUI({ url: "/doc" }));
 
 app.get(
-  "/ui",
-  Scalar({
-    url: "/doc",
-  }),
+	"/docs",
+	Scalar({
+		url: "/doc",
+	}),
 );
 
+app.use(
+	cors({
+		origin: "*",
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowHeaders: [
+			"Content-Type",
+			"Authorization",
+			"X-Requested-With",
+			"Accept",
+			"*",
+		],
+		credentials: true,
+	}),
+);
 
-
-
-app.use(cors({
-  origin: "*",
-  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "Accept",
-    "*",
-  ],
-  credentials: true,
-}));
-
-const querySchema = z.object({
-  name: z.string().optional().openapi({
-    title: "Name",
-    example: "Hono",
-    description: "Name of the user",
-  }),
+app.onError((error, c) => {
+	if (error instanceof HTTPException) {
+		const err = error as HTTPException;
+		return c.json(
+			{
+				name: err.name,
+				message: err.message,
+			},
+			err.status ?? 500,
+		);
+	}
+	return c.json(
+		{
+			name: error.name,
+			message: error.message,
+		},
+		500,
+	);
 });
 
 app.get(
-  "/",
-  describeRoute({
-    method: "get",
-    path: "/",
-    description: "Say hello to the user",
-    request: {
-      query: resolver(querySchema),
-    },
-    responses: {
-      200: {
-        description: "Successful response",
-        content: {
-          "text/plain": {
-            schema: resolver(z.string()),
-            example: "Hello Hono!",
-          },
-        },
-      },
-    },
-  }),
-  zValidator("query", querySchema),
-  (c) => {
-    const { name } = c.req.query();
-    return c.text(`Hello ${name ?? "Hono"}!`, 200);
-  },
+	"/health",
+	describeRoute({
+		tags: ["default"],
+		description: "Health check",
+		responses: {
+			200: {
+				description: "Successful response",
+				content: {
+					"text/plain": {
+						schema: resolver(z.string()),
+						example: "OK",
+					},
+				},
+			},
+		},
+	}),
+	async (c) => {
+		return c.text("OK", 200);
+	},
 );
-
-
-// app.route("/", member);
-// app.route("/", manager);
 
 app.get(
-  "/doc",
-  openAPISpecs(app, {
-    documentation: {
-      info: {
-        title: "DMS Server",
-        version: "1.0.0",
-        description: "DMS project API",
-      },
-      servers: [
-        {
-          url: "http://localhost:8787",
-          description: "Local server",
-        },
-        {
-          url: "https://dms_backend.rony000013.workers.dev",
-          description: "Production server",
-        },
-      ],
-    },
-  }),
+	"/doc",
+	openAPISpecs(app, {
+		documentation: {
+			info: {
+				title: "DMS Backend API",
+				version: "1.0.0",
+				description: "Document Management System API",
+			},
+			servers: [
+				{
+					url: "http://localhost:3000",
+					description: "Local server",
+				},
+			],
+			tags: [
+				{
+					name: "default",
+					description: "Default routes",
+				},
+			],
+		},
+	}),
 );
 
-export default app;
+app.route("/", files);
+app.route("/", members);
+app.route("/", workspace);
+
+serve({
+	fetch: app.fetch,
+	port: Number(process.env.PORT) || 3000,
+});

@@ -1,20 +1,44 @@
 {
   "name": "dms_backend",
+  "version": "1.0.0",
+  "description": "Document Management System Backend with Hono, Azure PostgreSQL, and Blob Storage",
+  "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist",
+    "prestart": "pnpm run clean && pnpm run build",
+    "test": "echo \"No tests yet...\"",
+    "migrate:up": "drizzle-kit migrate:up --config ./drizzle.config.ts",
+    "migrate:generate": "drizzle-kit generate:pg --config ./drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config ./drizzle.config.ts"
   },
   "dependencies": {
+    "@azure/identity": "^4.10.0",
+    "@azure/storage-blob": "^12.27.0",
+    "@hono/node-server": "^1.14.3",
     "@hono/swagger-ui": "^0.5.1",
-    "@hono/zod-validator": "^0.4.3",
-    "@scalar/hono-api-reference": "^0.8.0",
-    "hono": "^4.7.6",
-    "hono-openapi": "^0.4.6",
-    "zod": "^3.24.2",
-    "zod-openapi": "^4.2.4"
+    "@hono/zod-openapi": "^0.19.8",
+    "@neondatabase/serverless": "^1.0.0",
+    "@scalar/hono-api-reference": "^0.9.1",
+    "dotenv": "^16.5.0",
+    "drizzle-kit": "0.31.1",
+    "drizzle-orm": "0.44.0",
+    "hono": "^4.7.10",
+    "hono-openapi": "^0.4.8",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.42",
+    "zod-openapi": "^4.2.4",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250214.0",
-    "wrangler": "^4.10.0"
-  }
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^22.15.28",
+    "@types/pg": "^8.15.2",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977"
 }
