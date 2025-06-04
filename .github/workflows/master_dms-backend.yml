@@ -76,12 +76,5 @@ jobs:
           app-name: 'dms-backend'
           slot-name: 'Production'
           package: .
-          azure-webapp-publish-settings: |
-            apiVersion: 2023-01-01
-            properties:
-              scmType: LocalGit
-              deployment:
-                localGitEnabled: true
-                deploymentType: zipDeploy
           # Add deployment logs
           DEPLOYMENT_LOG_LEVEL: VERBOSE
