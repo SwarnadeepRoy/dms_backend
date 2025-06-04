@@ -69,17 +69,6 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A32AC4E89A5A4BDA88D3FA3F14029066 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0A84805E1EE541B3910E118E988C0E81 }}
 
-      - name: Configure App Service
-        uses: azure/appservice-settings@v2
-        with:
-          app-name: 'dms-backend'
-          slot-name: 'Production'
-          app-settings: |
-            WEBSITE_NODE_DEFAULT_VERSION=~22
-            PM2_STARTUP_FILE=dist/index.js
-            PM2_INSTANCE_COUNT=1
-            PORT=3000
-
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
