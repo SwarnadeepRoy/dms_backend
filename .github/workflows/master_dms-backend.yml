@@ -25,17 +25,17 @@ jobs:
 
       - name: Install dependencies for deployment
         run: |
-          corepack enable pnpm
-          pnpm install
+          corepack enable yarn
+          yarn install
 
       - name: Build TypeScript
         run: |
-          pnpm run build
+          yarn run build
 
 
       - name: Zip artifact for deployment
         run: |
-          zip release.zip package.json pnpm-lock.yaml dist/* node_modules/* -r
+          zip release.zip package.json yarn.lock dist/* node_modules/* -r
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

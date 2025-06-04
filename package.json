@@ -15,7 +15,6 @@
     "db:studio": "drizzle-kit studio --config ./drizzle.config.ts"
   },
   "dependencies": {
-    "@azure/core-rest-pipeline": "^1.20.0",
     "@azure/identity": "^4.10.0",
     "@azure/storage-blob": "^12.27.0",
     "@hono/node-server": "^1.14.3",
@@ -23,9 +22,7 @@
     "@hono/zod-openapi": "^0.19.8",
     "@hono/zod-validator": "^0.4.1",
     "@neondatabase/serverless": "^1.0.0",
-    "@scalar/core": "0.3.1",
     "@scalar/hono-api-reference": "^0.9.1",
-    "@typespec/ts-http-runtime": "^0.2.2",
     "dotenv": "^16.5.0",
     "drizzle-kit": "0.31.1",
     "drizzle-orm": "0.44.0",
@@ -44,5 +41,5 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   },
-  "packageManager": "pnpm@10.11.1+sha512.e519b9f7639869dc8d5c3c5dfef73b3f091094b0a006d7317353c72b124e80e1afd429732e28705ad6bfa1ee879c1fce46c128ccebd3192101f43dd67c667912"
+  "packageManager": "yarn@1.22.22"
 }
