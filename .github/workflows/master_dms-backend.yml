@@ -22,15 +22,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '22.x'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies for deployment
         run: |
           corepack enable pnpm
           pnpm install
-          pnpm install --no-frozen-lockfile
-          pnpm install --prod
 
       - name: Build TypeScript
         run: |
