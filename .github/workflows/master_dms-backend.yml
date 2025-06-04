@@ -25,6 +25,7 @@ jobs:
 
       - name: pnpm install, build, and test
         run: |
+          corepack enable pnpm
           pnpm install
           pnpm run build --if-present
           pnpm run test --if-present
