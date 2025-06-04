@@ -25,6 +25,7 @@
     "@neondatabase/serverless": "^1.0.0",
     "@scalar/core": "0.3.1",
     "@scalar/hono-api-reference": "^0.9.1",
+    "@typespec/ts-http-runtime": "^0.2.2",
     "dotenv": "^16.5.0",
     "drizzle-kit": "0.31.1",
     "drizzle-orm": "0.44.0",

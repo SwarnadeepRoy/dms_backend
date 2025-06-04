@@ -38,6 +38,9 @@ importers:
       '@scalar/hono-api-reference':
         specifier: ^0.9.1
         version: 0.9.1(hono@4.7.10)
+      '@typespec/ts-http-runtime':
+        specifier: ^0.2.2
+        version: 0.2.2
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
