@@ -10,22 +10,21 @@ import type { AppContext } from "./middlewares.js";
 import { error400, error404, error500, json200, resp200 } from "./utils.js";
 import { users, files, filePermissions } from "../db/schema.js";
 import { eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
 
 const app = new Hono();
 
 const fileSchema = z.object({
-	fileId: z.string().uuid().nullable(),
-	workspaceId: z.string().uuid().nullable(),
-	uploaderId: z.string().uuid().nullable(),
-	fileName: z.string(),
-	filePath: z.string(),
-	fileType: z.string().nullable(),
-	fileSizeBytes: z.number().nullable(),
+	file_id: z.string().uuid().nullable(),
+	workspace_id: z.string().uuid().nullable(),
+	uploader_id: z.string().uuid().nullable(),
+	file_name: z.string(),
+	file_path: z.string(),
+	file_type: z.string().nullable(),
+	file_size_bytes: z.number().nullable(),
 	version: z.number().int().nullable(),
 	description: z.string().nullable(),
-	createdAt: z.date().nullable(),
-	updatedAt: z.date().nullable(),
+	created_at: z.date().nullable(),
+	updated_at: z.date().nullable(),
 });
 
 app.post(
@@ -45,6 +44,18 @@ app.post(
 				in: "path",
 				required: true,
 				schema: resolver(z.string()),
+			},
+			{
+				name: "filename",
+				in: "query",
+				required: true,
+				schema: resolver(z.string()),
+			},
+			{
+				name: "fileId",
+				in: "query",
+				required: false,
+				schema: resolver(z.string().uuid()),
 			},
 		],
 		requestBody: {
@@ -68,12 +79,13 @@ app.post(
 		const userId = c.req.param("userId");
 		const workspaceId = c.req.param("workspaceId");
 		const body = await c.req.blob();
-		const filename = c.req.header("x-filename") || "uploaded_file"; // Get filename from header or use default
+		const filename = c.req.query("filename") || "uploaded_file"; // Get filename from header or use default
+		const file_id = c.req.query("fileId");
 		const contentType =
 			c.req.header("content-type") || "application/octet-stream";
 
 		const db = c.get("db");
-		const user = await db.select().from(users).where(eq(users.userId, userId));
+		const user = await db.select().from(users).where(eq(users.user_id, userId));
 		if (user.length === 0) {
 			throw new HTTPException(404, { message: "User not found" });
 		}
@@ -83,6 +95,7 @@ app.post(
 
 		const arrayBuffer = await body.arrayBuffer();
 		const bytes = new Uint8Array(arrayBuffer);
+		const bytes_length = bytes.length;
 
 		await blockBlobClient.upload(bytes, bytes.byteLength, {
 			blobHTTPHeaders: {
@@ -90,19 +103,40 @@ app.post(
 			},
 		});
 
+		if (file_id) {
+			const file = await db.select().from(files).where(eq(files.file_id, file_id));
+			if (file.length === 0) {
+				throw new HTTPException(404, { message: "File not found" });
+			}
+			const newFile = await db
+				.update(files)
+				.set({
+					file_name: filename,
+					file_path: blockBlobClient.url,
+					file_type: contentType,
+					file_size_bytes: bytes_length,
+					uploader_id: userId,
+					workspace_id: workspaceId,
+					version: file[0].version || 0 + 1,
+				})
+				.where(eq(files.file_id, file_id))
+				.returning();
+			return c.json(newFile[0], 200);
+		}
+
 		const file = await db
 			.insert(files)
 			.values({
-				fileId: uuidv4(),
-				fileName: filename,
-				filePath: blockBlobClient.url,
-				uploaderId: userId,
-				workspaceId: workspaceId,
+				file_name: filename,
+				file_path: blockBlobClient.url,
+				file_type: contentType,
+				file_size_bytes: bytes_length,
+				uploader_id: userId,
+				workspace_id: workspaceId,
 				version: 1,
 			})
 			.returning();
-
-		return c.json(file, 200);
+		return c.json(file[0], 200);
 	},
 );
 
@@ -124,39 +158,45 @@ app.get(
 	},
 );
 
+const fileQuery = z.object({
+	file_id: z.string().uuid(),
+	user_id: z.string().uuid(),
+});
+
 app.get(
-	"/file/:fileId/:userId",
+	"/file",
 	describeRoute({
 		tags: ["files"],
 		description: "Get a specific blob from the container",
 		parameters: [
 			{
-				name: "fileId",
-				in: "path",
+				name: "file_id",
+				in: "query",
 				required: true,
-				schema: resolver(z.string()),
+				schema: resolver(z.string().uuid()),
 			},
 			{
-				name: "userId",
-				in: "path",
+				name: "user_id",
+				in: "query",
 				required: true,
-				schema: resolver(z.string()),
+				schema: resolver(z.string().uuid()),
 			},
 		],
 		responses: {
 			200: resp200,
+			400: error400,
 			404: error404,
 			500: error500,
 		},
 	}),
+	validator("query", fileQuery),
 	async (c: AppContext) => {
-		const file_id = c.req.param("fileId");
-		const user_id = c.req.param("userId");
+		const { file_id, user_id } = c.req.query();
 		const db = c.get("db");
 		const user = await db
 			.select()
 			.from(users)
-			.where(eq(users.userId, user_id))
+			.where(eq(users.user_id, user_id))
 			.limit(1);
 		if (!user[0]) {
 			throw new HTTPException(404, { message: "User not found" });
@@ -164,9 +204,9 @@ app.get(
 		const permissions = await db
 			.select()
 			.from(filePermissions)
-			.where(eq(filePermissions.userId, user_id))
+			.where(eq(filePermissions.user_id, user_id))
 			.limit(1);
-		if (permissions.length === 0 || !permissions[0].canView) {
+		if (permissions.length === 0 || !permissions[0].can_view) {
 			throw new HTTPException(403, {
 				message: "User does not have permission to view files",
 			});
@@ -175,17 +215,17 @@ app.get(
 		const file = await db
 			.select()
 			.from(files)
-			.where(eq(files.fileId, file_id))
+			.where(eq(files.file_id, file_id))
 			.limit(1);
 		if (file.length === 0) {
 			throw new HTTPException(404, { message: "File not found" });
 		}
-		return c.text(file[0].filePath);
+		return c.text(file[0].file_path);
 	},
 );
 
 app.get(
-	"/file/:fileId/versions",
+	"/file/versions/:fileId",
 	describeRoute({
 		tags: ["files"],
 		description: "Get all versions of a specific blob",
@@ -210,12 +250,12 @@ app.get(
 		const file = await db
 			.select()
 			.from(files)
-			.where(eq(files.fileId, fileId))
+			.where(eq(files.file_id, fileId))
 			.limit(1);
 		if (file.length === 0) {
 			throw new HTTPException(404, { message: "File not found" });
 		}
-		const filename = file[0].fileName;
+		const filename = file[0].file_name;
 
 		const versions = [];
 		for await (const blob of blobDb.listBlobsFlat({ includeVersions: true })) {
@@ -235,7 +275,7 @@ app.get(
 );
 
 app.get(
-	"/file/:fileId/version/:versionId",
+	"/file/versions/:fileId/:versionId",
 	describeRoute({
 		tags: ["files"],
 		description: "Get a specific version of a blob",
@@ -268,13 +308,13 @@ app.get(
 		const file = await db
 			.select()
 			.from(files)
-			.where(eq(files.fileId, fileId))
+			.where(eq(files.file_id, fileId))
 			.limit(1);
 		if (file.length === 0) {
 			throw new HTTPException(404, { message: "File not found" });
 		}
 
-		const blob = blobDb.getBlobClient(file[0].fileName);
+		const blob = blobDb.getBlobClient(file[0].file_name);
 		if (!blob.exists()) {
 			throw new HTTPException(404, {
 				message: "Blob not found or version not available",
@@ -283,6 +323,7 @@ app.get(
 
 		const versionedBlob = blob.withVersion(versionId);
 
+		console.log(versionedBlob);
 		return c.text(versionedBlob.url);
 	},
 );

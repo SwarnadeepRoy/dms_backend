@@ -2,10 +2,10 @@ import { HTTPException } from "hono/http-exception";
 import "zod-openapi/extend";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver } from "hono-openapi/zod";
+import { resolver, validator } from "hono-openapi/zod";
 import z from "zod";
 import type { AppContext } from "./middlewares.js";
-import { users } from "../db/schema.js";
+import { users, filePermissions } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 import { error400, error404, error500, json200 } from "./utils.js";
@@ -32,7 +32,7 @@ const userSchema = z.object({
 	first_name: z.string(),
 	last_name: z.string(),
 	is_active: z.boolean(),
-	manager_id: z.string().optional(),
+	is_manager: z.boolean().optional(),
 	created_at: z.string().optional(),
 	updated_at: z.string().optional(),
 });
@@ -76,7 +76,7 @@ app.get(
 	async (c: AppContext) => {
 		const id = c.req.param("id");
 		const db = c.get("db");
-		const member = await db.select().from(users).where(eq(users.userId, id));
+		const member = await db.select().from(users).where(eq(users.user_id, id));
 		if (!member) {
 			throw new HTTPException(404, { message: "Member not found" });
 		}
@@ -97,16 +97,51 @@ app.post(
 				},
 			},
 		},
-		// zValidator("json", userSchema),
 		responses: {
 			200: json200(userSchema),
 			500: error500,
 		},
 	}),
+	validator("json", userSchema),
 	async (c: AppContext) => {
 		const body = await c.req.json();
 		const db = c.get("db");
+		console.log(body);
 		const member = await db.insert(users).values(body).returning();
+		if (member[0].is_manager) {
+			await db.update(filePermissions).set({ can_view: true, can_edit: true, can_delete: true, can_share: true, can_download: true }).where(eq(filePermissions.user_id, member[0].user_id));
+		}
+		return c.json(member[0]);
+	},
+);
+
+app.delete(
+	"/members/:id",
+	describeRoute({
+		tags: ["members"],
+		description: "Delete a member",
+		parameters: [
+			{
+				name: "id",
+				in: "path",
+				required: true,
+				schema: resolver(z.string()),
+			},
+		],
+		responses: {
+			200: json200(userSchema),
+			404: error404,
+			500: error500,
+		},
+	}),
+	async (c: AppContext) => {
+		const id = c.req.param("id");
+		const db = c.get("db");
+		const existingUser = await db.select().from(users).where(eq(users.user_id, id));
+		if (existingUser.length === 0) {
+			throw new HTTPException(404, { message: "Member not found" });
+		}
+		const member = await db.delete(users).where(eq(users.user_id, id)).returning();
 		return c.json(member);
 	},
 );
@@ -134,9 +169,10 @@ app.post(
 		const db = c.get("db");
 		const member = await db
 			.update(users)
-			.set({ isManager: true })
-			.where(eq(users.userId, id))
+			.set({ is_manager: true })
+			.where(eq(users.user_id, id))
 			.returning();
+		await db.update(filePermissions).set({ can_view: true, can_edit: true, can_delete: true, can_share: true, can_download: true }).where(eq(filePermissions.user_id, id));
 		return c.json(member);
 	},
 );
@@ -164,9 +200,10 @@ app.delete(
 		const db = c.get("db");
 		const member = await db
 			.update(users)
-			.set({ isManager: false })
-			.where(eq(users.userId, id))
+			.set({ is_manager: false })
+			.where(eq(users.user_id, id))
 			.returning();
+		await db.update(filePermissions).set({ can_view: false, can_edit: false, can_delete: false, can_share: false, can_download: false }).where(eq(filePermissions.user_id, id));
 		return c.json(member);
 	},
 );

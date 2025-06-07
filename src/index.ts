@@ -16,6 +16,7 @@ dotenv.config();
 import files from "./files.js";
 import members from "./members.js";
 import workspace from "./workspace.js";
+import permission from "./permission.js";
 
 const app = new Hono();
 
@@ -101,9 +102,13 @@ app.get(
 			},
 			servers: [
 				{
-					url: "http://localhost:3000",
+					url: "http://localhost:8000",
 					description: "Local server",
 				},
+				{
+					url: "https://dms-backend-axc5efgse0d5bxan.canadacentral-01.azurewebsites.net",
+					description: "Production server",
+				}
 			],
 			tags: [
 				{
@@ -118,8 +123,9 @@ app.get(
 app.route("/", files);
 app.route("/", members);
 app.route("/", workspace);
+app.route("/", permission);
 
 serve({
 	fetch: app.fetch,
-	port: Number(process.env.PORT) || 3000,
+	port: Number(process.env.PORT) || 8000,
 });

@@ -41,58 +41,57 @@ export const targetEntityTypeEnum = pgEnum("target_entity_type", [
 
 // Users Table
 export const users = pgTable("users", {
-	userId: uuid("user_id").primaryKey().defaultRandom(),
+	user_id: uuid("user_id").primaryKey().defaultRandom(),
 	username: varchar("username", { length: 100 }).notNull().unique(),
 	email: varchar("email", { length: 255 }).notNull().unique(),
-	passwordHash: varchar("password_hash", { length: 255 }).notNull(),
-	firstName: varchar("first_name", { length: 100 }),
-	lastName: varchar("last_name", { length: 100 }),
-	isActive: boolean("is_active").default(true),
-	isManager: boolean("is_manager").default(false),
-	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+	first_name: varchar("first_name", { length: 100 }),
+	last_name: varchar("last_name", { length: 100 }),
+	is_active: boolean("is_active").default(true),
+	is_manager: boolean("is_manager").default(false),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Workspaces Table
 export const workspaces = pgTable("workspaces", {
-	workspaceId: uuid("workspace_id").primaryKey().defaultRandom(),
+	workspace_id: uuid("workspace_id").primaryKey().defaultRandom(),
 	name: varchar("name", { length: 255 }).notNull(),
 	description: text("description"),
-	workspaceManagerId: uuid("workspace_manager_id")
+	workspace_manager_id: uuid("workspace_manager_id")
 		.notNull()
-		.references(() => users.userId, {
+		.references(() => users.user_id, {
 			onDelete: "restrict",
 			onUpdate: "cascade",
 		}),
-	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Workspace Members Table
 export const workspaceMembers = pgTable(
 	"workspace_members",
 	{
-		workspaceMemberId: uuid("workspace_member_id").primaryKey().defaultRandom(),
-		userId: uuid("user_id")
+		workspace_member_id: uuid("workspace_member_id").primaryKey().defaultRandom(),
+		user_id: uuid("user_id")
 			.notNull()
-			.references(() => users.userId, {
+			.references(() => users.user_id, {
 				onDelete: "cascade",
 				onUpdate: "cascade",
 			}),
-		workspaceId: uuid("workspace_id")
+		workspace_id: uuid("workspace_id")
 			.notNull()
-			.references(() => workspaces.workspaceId, {
+			.references(() => workspaces.workspace_id, {
 				onDelete: "cascade",
 				onUpdate: "cascade",
 			}),
-		joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow(),
+		joined_at: timestamp("joined_at", { withTimezone: true }).defaultNow(),
 		role: userRoleEnum("role").default("member"),
 	},
 	(table) => ({
 		// Composite unique constraint
 		userWorkspaceUnique: unique("user_workspace_unique").on(
-			table.userId,
-			table.workspaceId,
+			table.user_id,
+			table.workspace_id,
 		),
 	}),
 );
@@ -101,33 +100,33 @@ export const workspaceMembers = pgTable(
 export const files = pgTable(
 	"files",
 	{
-		fileId: uuid("file_id").primaryKey().defaultRandom(),
-		workspaceId: uuid("workspace_id")
+		file_id: uuid("file_id").primaryKey().defaultRandom(),
+		workspace_id: uuid("workspace_id")
 			.notNull()
-			.references(() => workspaces.workspaceId, {
+			.references(() => workspaces.workspace_id, {
 				onDelete: "cascade",
 				onUpdate: "cascade",
 			}),
-		uploaderId: uuid("uploader_id")
+		uploader_id: uuid("uploader_id")
 			.notNull()
-			.references(() => users.userId, {
+			.references(() => users.user_id, {
 				onDelete: "restrict",
 				onUpdate: "cascade",
 			}),
-		fileName: varchar("file_name", { length: 1024 }).notNull(),
-		filePath: varchar("file_path", { length: 1024 }).notNull(),
-		fileType: varchar("file_type", { length: 100 }),
-		fileSizeBytes: bigint("file_size_bytes", { mode: "number" }),
+		file_name: varchar("file_name", { length: 1024 }).notNull(),
+		file_path: varchar("file_path", { length: 1024 }).notNull(),
+		file_type: varchar("file_type", { length: 100 }),
+		file_size_bytes: bigint("file_size_bytes", { mode: "number" }),
 		version: integer("version").default(1),
 		description: text("description"),
-		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+		updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 	},
 	(table) => ({
 		// Composite unique constraint for filename within workspace
-		fileNameWorkspaceUnique: unique("file_name_workspace_unique").on(
-			table.workspaceId,
-			table.fileName,
+		file_name_workspace_unique: unique("file_name_workspace_unique").on(
+			table.workspace_id,
+			table.file_name,
 		),
 	}),
 );
@@ -136,110 +135,110 @@ export const files = pgTable(
 export const filePermissions = pgTable(
 	"file_permissions",
 	{
-		permissionId: uuid("permission_id").primaryKey().defaultRandom(),
-		fileId: uuid("file_id")
+		permission_id: uuid("permission_id").primaryKey().defaultRandom(),
+		file_id: uuid("file_id")
 			.notNull()
-			.references(() => files.fileId, {
+			.references(() => files.file_id, {
 				onDelete: "cascade",
 				onUpdate: "cascade",
 			}),
-		userId: uuid("user_id")
+		user_id: uuid("user_id")
 			.notNull()
-			.references(() => users.userId, {
+			.references(() => users.user_id, {
 				onDelete: "cascade",
 				onUpdate: "cascade",
 			}),
-		workspaceId: uuid("workspace_id")
+		workspace_id: uuid("workspace_id")
 			.notNull()
-			.references(() => workspaces.workspaceId, {
+			.references(() => workspaces.workspace_id, {
 				onDelete: "cascade",
 				onUpdate: "cascade",
 			}),
-		canView: boolean("can_view").default(false),
-		canEdit: boolean("can_edit").default(false),
-		canDelete: boolean("can_delete").default(false),
-		canShare: boolean("can_share").default(false),
-		canDownload: boolean("can_download").default(false),
-		grantedById: uuid("granted_by_id")
+		can_view: boolean("can_view").default(false),
+		can_edit: boolean("can_edit").default(false),
+		can_delete: boolean("can_delete").default(false),
+		can_share: boolean("can_share").default(false),
+		can_download: boolean("can_download").default(false),
+		granted_by_id: uuid("granted_by_id")
 			.notNull()
-			.references(() => users.userId, {
+			.references(() => users.user_id, {
 				onDelete: "restrict",
 				onUpdate: "cascade",
 			}),
-		grantedAt: timestamp("granted_at", { withTimezone: true }).defaultNow(),
+		granted_at: timestamp("granted_at", { withTimezone: true }).defaultNow(),
 	},
 	(table) => ({
 		// Composite unique constraint for file-user permissions
-		fileUserUnique: unique("file_user_permission_unique").on(
-			table.fileId,
-			table.userId,
+		file_user_permission_unique: unique("file_user_permission_unique").on(
+			table.file_id,
+			table.user_id,
 		),
 	}),
 );
 
 // Audit Logs Table
 export const auditLogs = pgTable("audit_logs", {
-	logId: uuid("log_id").primaryKey().defaultRandom(),
-	userId: uuid("user_id").references(() => users.userId, {
+	log_id: uuid("log_id").primaryKey().defaultRandom(),
+	user_id: uuid("user_id").references(() => users.user_id, {
 		onDelete: "set null",
 		onUpdate: "cascade",
 	}),
-	actionType: actionTypeEnum("action_type").notNull(),
-	targetEntityType: targetEntityTypeEnum("target_entity_type"),
-	targetEntityId: varchar("target_entity_id", { length: 255 }),
-	workspaceId: uuid("workspace_id").references(() => workspaces.workspaceId, {
+	action_type: actionTypeEnum("action_type").notNull(),
+	target_entity_type: targetEntityTypeEnum("target_entity_type"),
+	target_entity_id: varchar("target_entity_id", { length: 255 }),
+	workspace_id: uuid("workspace_id").references(() => workspaces.workspace_id, {
 		onDelete: "set null",
 		onUpdate: "cascade",
 	}),
 	details: jsonb("details"),
-	ipAddress: varchar("ip_address", { length: 45 }),
-	userAgent: text("user_agent"),
-	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	ip_address: varchar("ip_address", { length: 45 }),
+	user_agent: text("user_agent"),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 // Relations and types
 export const usersRelations = relations(users, ({ many }) => ({
 	workspaces: many(workspaces, { relationName: "workspaceManager" }),
-	workspaceMemberships: many(workspaceMembers),
-	uploadedFiles: many(files, { relationName: "uploader" }),
-	grantedPermissions: many(filePermissions, { relationName: "grantedBy" }),
-	auditLogs: many(auditLogs),
+	workspace_memberships: many(workspaceMembers),
+	uploaded_files: many(files, { relationName: "uploader" }),
+	granted_permissions: many(filePermissions, { relationName: "grantedBy" }),
+	audit_logs: many(auditLogs),
 }));
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 	manager: one(users, {
-		fields: [workspaces.workspaceManagerId],
-		references: [users.userId],
+		fields: [workspaces.workspace_manager_id],
+		references: [users.user_id],
 		relationName: "workspaceManager",
 	}),
 	members: many(workspaceMembers),
 	files: many(files),
-	filePermissions: many(filePermissions),
-	auditLogs: many(auditLogs),
+	file_permissions: many(filePermissions),
+	audit_logs: many(auditLogs),
 }));
 
 export const workspaceMembersRelations = relations(
 	workspaceMembers,
 	({ one }) => ({
 		user: one(users, {
-			fields: [workspaceMembers.userId],
-			references: [users.userId],
+			fields: [workspaceMembers.user_id],
+			references: [users.user_id],
 		}),
 		workspace: one(workspaces, {
-			fields: [workspaceMembers.workspaceId],
-			references: [workspaces.workspaceId],
+			fields: [workspaceMembers.workspace_id],
+			references: [workspaces.workspace_id],
 		}),
 	}),
 );
 
 export const filesRelations = relations(files, ({ one, many }) => ({
 	workspace: one(workspaces, {
-		fields: [files.workspaceId],
-		references: [workspaces.workspaceId],
+		fields: [files.workspace_id],
+		references: [workspaces.workspace_id],
 	}),
 	uploader: one(users, {
-		fields: [files.uploaderId],
-		references: [users.userId],
+		fields: [files.uploader_id],
+		references: [users.user_id],
 		relationName: "uploader",
 	}),
 	permissions: many(filePermissions),
@@ -249,20 +248,20 @@ export const filePermissionsRelations = relations(
 	filePermissions,
 	({ one }) => ({
 		file: one(files, {
-			fields: [filePermissions.fileId],
-			references: [files.fileId],
+			fields: [filePermissions.file_id],
+			references: [files.file_id],
 		}),
 		user: one(users, {
-			fields: [filePermissions.userId],
-			references: [users.userId],
+			fields: [filePermissions.user_id],
+			references: [users.user_id],
 		}),
 		workspace: one(workspaces, {
-			fields: [filePermissions.workspaceId],
-			references: [workspaces.workspaceId],
+			fields: [filePermissions.workspace_id],
+			references: [workspaces.workspace_id],
 		}),
 		grantedBy: one(users, {
-			fields: [filePermissions.grantedById],
-			references: [users.userId],
+			fields: [filePermissions.granted_by_id],
+			references: [users.user_id],
 			relationName: "grantedBy",
 		}),
 	}),
@@ -270,12 +269,12 @@ export const filePermissionsRelations = relations(
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
 	user: one(users, {
-		fields: [auditLogs.userId],
-		references: [users.userId],
+		fields: [auditLogs.user_id],
+		references: [users.user_id],
 	}),
 	workspace: one(workspaces, {
-		fields: [auditLogs.workspaceId],
-		references: [workspaces.workspaceId],
+		fields: [auditLogs.workspace_id],
+		references: [workspaces.workspace_id],
 	}),
 }));
 

@@ -2,7 +2,7 @@ import { HTTPException } from "hono/http-exception";
 import "zod-openapi/extend";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver } from "hono-openapi/zod";
+import { resolver, validator } from "hono-openapi/zod";
 import { z } from "zod";
 import type { AppContext } from "./middlewares.js";
 import { workspaces, workspaceMembers, users } from "../db/schema.js";
@@ -81,7 +81,7 @@ app.get(
 		const workspace = await db
 			.select()
 			.from(workspaces)
-			.where(eq(workspaces.workspaceId, id))
+			.where(eq(workspaces.workspace_id, id))
 			.limit(1);
 		if (workspace.length === 0) {
 			throw new HTTPException(404, { message: "Workspace not found" });
@@ -91,7 +91,7 @@ app.get(
 );
 
 app.post(
-	"/workspaces/:userId",
+	"/workspace/:userId",
 	describeRoute({
 		tags: ["workspaces"],
 		description: "Create a new workspace",
@@ -118,15 +118,16 @@ app.post(
 			500: error500,
 		},
 	}),
+	validator("json", workspaceSchema),
 	async (c: AppContext) => {
 		const body = await c.req.json();
 		const userId = c.req.param("userId");
 		const db = c.get("db");
-		const user = await db.select().from(users).where(eq(users.userId, userId));
+		const user = await db.select().from(users).where(eq(users.user_id, userId));
 		if (user.length === 0) {
 			throw new HTTPException(404, { message: "User not found" });
 		}
-		if (!user[0].isManager) {
+		if (!user[0].is_manager) {
 			throw new HTTPException(400, { message: "User is not a manager" });
 		}
 		const workspace = await db.insert(workspaces).values(body).returning();
@@ -141,13 +142,14 @@ const memberAddSchema = z.object({
 	workspace_id: z.string(),
 	user_id: z.string(),
 	grantedById: z.string(),
+	add: z.boolean().default(true),
 });
 
 app.post(
 	"/workspaces/member",
 	describeRoute({
 		tags: ["workspaces"],
-		description: "Add a member to a workspace",
+		description: "Add or remove a member from a workspace",
 		requestBody: {
 			required: true,
 			content: {
@@ -163,66 +165,31 @@ app.post(
 			500: error500,
 		},
 	}),
+	validator("json", memberAddSchema),
 	async (c: AppContext) => {
 		const body = await c.req.json();
 		const db = c.get("db");
-		const user = await db.select().from(users).where(eq(users.userId, body.grantedById));
+		const user = await db.select({ is_manager: users.is_manager }).from(users).where(eq(users.user_id, body.grantedById));
 		if (user.length === 0) {
 			throw new HTTPException(404, { message: "User not found" });
 		}
-		if (!user[0].isManager) {
+		if (!user[0].is_manager) {
 			throw new HTTPException(400, { message: "User is not a manager" });
 		}
-		const workspace = await db
-			.insert(workspaceMembers)
-			.values({ workspaceId: body.workspaceId, userId: body.userId })
-			.returning();
-		return c.json(workspace);
-	},
-);
 
-const memberRemoveSchema = z.object({
-	workspace_id: z.string(),
-	user_id: z.string(),
-	grantedById: z.string(),
-});
-
-app.delete(
-	"/workspaces/member",
-	describeRoute({
-		tags: ["workspaces"],
-		description: "Remove a member from a workspace",
-		requestBody: {
-			required: true,
-			content: {
-				"application/json": {
-					schema: (await resolver(memberRemoveSchema).builder()).schema,
-				},
-			},
-		},
-		responses: {
-			200: json200(workspaceSchema),
-			400: error400,
-			404: error404,
-			500: error500,
-		},
-	}),
-	async (c: AppContext) => {
-		const body = await c.req.json();
-		const db = c.get("db");
-		const user = await db.select().from(users).where(eq(users.userId, body.grantedById));
-		if (user.length === 0) {
-			throw new HTTPException(404, { message: "User not found" });
-		}
-		if (!user[0].isManager) {
-			throw new HTTPException(400, { message: "User is not a manager" });
+		if (body.add) {
+			const workspace = await db
+				.insert(workspaceMembers)
+				.values({ workspace_id: body.workspace_id, user_id: body.user_id })
+				.returning();
+			return c.json(workspace);
 		}
 		const workspace = await db
 			.delete(workspaceMembers)
 			.where(
 				and(
-					eq(workspaceMembers.workspaceId, body.workspaceId),
-					eq(workspaceMembers.userId, body.userId),
+					eq(workspaceMembers.workspace_id, body.workspace_id),
+					eq(workspaceMembers.user_id, body.user_id),
 				),
 			)
 			.returning();
