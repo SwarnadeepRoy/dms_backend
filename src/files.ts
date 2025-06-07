@@ -76,8 +76,8 @@ app.post(
 		},
 	}),
 	async (c: AppContext) => {
-		const userId = c.req.param("userId");
-		const workspaceId = c.req.param("workspaceId");
+		const user_id = c.req.param("userId");
+		const workspace_id = c.req.param("workspaceId");
 		const body = await c.req.blob();
 		const filename = c.req.query("filename") || "uploaded_file"; // Get filename from header or use default
 		const file_id = c.req.query("fileId");
@@ -85,7 +85,7 @@ app.post(
 			c.req.header("content-type") || "application/octet-stream";
 
 		const db = c.get("db");
-		const user = await db.select().from(users).where(eq(users.user_id, userId));
+		const user = await db.select().from(users).where(eq(users.user_id, user_id));
 		if (user.length === 0) {
 			throw new HTTPException(404, { message: "User not found" });
 		}
@@ -115,8 +115,8 @@ app.post(
 					file_path: blockBlobClient.url,
 					file_type: contentType,
 					file_size_bytes: bytes_length,
-					uploader_id: userId,
-					workspace_id: workspaceId,
+					uploader_id: user_id,
+					workspace_id: workspace_id,
 					version: file[0].version || 0 + 1,
 				})
 				.where(eq(files.file_id, file_id))
@@ -131,8 +131,8 @@ app.post(
 				file_path: blockBlobClient.url,
 				file_type: contentType,
 				file_size_bytes: bytes_length,
-				uploader_id: userId,
-				workspace_id: workspaceId,
+				uploader_id: user_id,
+				workspace_id: workspace_id,
 				version: 1,
 			})
 			.returning();
