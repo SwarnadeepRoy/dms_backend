@@ -4,7 +4,8 @@ import "zod-openapi/extend";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
 import { BlobServiceClient, type ContainerClient } from "@azure/storage-blob";
-import { env } from "hono/adapter";
+// @ts-ignore
+import { filterBadWords } from '@tekdi/multilingual-profanity-filter';
 import z from "zod";
 import type { AppContext } from "./middlewares.js";
 import { error400, error404, error500, json200, resp200 } from "./utils.js";
@@ -94,8 +95,14 @@ app.post(
 		const blockBlobClient = blobDb.getBlockBlobClient(filename);
 
 		const arrayBuffer = await body.arrayBuffer();
-		const bytes = new Uint8Array(arrayBuffer);
+		let bytes = new Uint8Array(arrayBuffer);
 		const bytes_length = bytes.length;
+
+		if (contentType === "text/plain" || contentType === "application/json" || contentType === "application/xml" || contentType === "application/rtf" || contentType === "application/msword") {
+			const text = new TextDecoder().decode(bytes);
+			const filteredText = filterBadWords(text, "en");
+			bytes = new TextEncoder().encode(filteredText);
+		}
 
 		await blockBlobClient.upload(bytes, bytes.byteLength, {
 			blobHTTPHeaders: {
@@ -325,6 +332,38 @@ app.get(
 
 		console.log(versionedBlob);
 		return c.text(versionedBlob.url);
+	},
+);
+
+app.delete("/file/:fileId",
+	describeRoute({
+		tags: ["files"],
+		description: "Delete a file",
+		parameters: [
+			{
+				name: "fileId",
+				in: "path",
+				required: true,
+				schema: resolver(z.string().uuid()),
+			},
+		],
+		responses: {
+			200: json200(fileSchema),
+			404: error404,
+			500: error500,
+		},
+	}),
+	async (c: AppContext) => {
+		const fileId = c.req.param("fileId");
+		const db = c.get("db");
+		const file = await db
+			.delete(files)
+			.where(eq(files.file_id, fileId))
+			.returning();
+		if (!file) {
+			throw new HTTPException(404, { message: "File not found" });
+		}
+		return c.json(file);
 	},
 );
 

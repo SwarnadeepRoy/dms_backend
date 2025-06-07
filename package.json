@@ -23,6 +23,7 @@
     "@hono/zod-validator": "^0.4.1",
     "@neondatabase/serverless": "^1.0.0",
     "@scalar/hono-api-reference": "^0.9.1",
+    "@tekdi/multilingual-profanity-filter": "^1.0.1",
     "dotenv": "^16.5.0",
     "drizzle-kit": "0.31.1",
     "drizzle-orm": "0.44.0",

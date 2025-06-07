@@ -84,6 +84,38 @@ app.get(
 	},
 );
 
+
+app.get(
+	"/member/:username",
+	describeRoute({
+		tags: ["members"],
+		description: "Get a specific member by username",
+		parameters: [
+			{
+				name: "username",
+				in: "path",
+				required: true,
+				schema: resolver(z.string()),
+			},
+		],
+		responses: {
+			200: json200(userSchema),
+			404: error404,
+			500: error500,
+		},
+	}),
+	async (c: AppContext) => {
+		const username = c.req.param("username");
+		const db = c.get("db");
+		const member = await db.select().from(users).where(eq(users.username, username));
+		if (!member) {
+			throw new HTTPException(404, { message: "Member not found" });
+		}
+		return c.json(member);
+	},
+);
+
+
 app.post(
 	"/members",
 	describeRoute({
