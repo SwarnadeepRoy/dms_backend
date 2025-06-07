@@ -6,10 +6,9 @@ import { resolver, validator } from "hono-openapi/zod";
 import { BlobServiceClient, type ContainerClient } from "@azure/storage-blob";
 import z from "zod";
 import type { AppContext } from "./middlewares.js";
-import { error400, error404, error500, json200, resp200 } from "./utils.js";
+import { error400, error404, error500, json200, resp200, filterBadWords } from "./utils.js";
 import { users, files, filePermissions } from "../db/schema.js";
 import { eq } from "drizzle-orm";
-import { filterBadWords } from '@tekdi/multilingual-profanity-filter';
 
 const app = new Hono();
 

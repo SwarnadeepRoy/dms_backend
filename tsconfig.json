@@ -17,6 +17,7 @@
     "types": ["node"],
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
