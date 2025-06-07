@@ -15,7 +15,8 @@
       "@/*": ["./src/*"]
     },
     "types": ["node"],
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
