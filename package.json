@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/src/index.js",
     "clean": "rimraf dist",
-    "prestart": "pnpm run clean && pnpm run build",
+    "prestart": "yarn run clean && yarn run build",
     "test": "echo \"No tests yet...\"",
     "migrate:up": "drizzle-kit migrate:up --config ./drizzle.config.ts",
     "migrate:generate": "drizzle-kit generate:pg --config ./drizzle.config.ts",
