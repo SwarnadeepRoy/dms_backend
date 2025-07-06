@@ -7,8 +7,6 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/src/index.js",
-
-    
     "test": "echo \"No tests yet...\"",
     "migrate:up": "drizzle-kit migrate:up --config ./drizzle.config.ts",
     "migrate:generate": "drizzle-kit generate:pg --config ./drizzle.config.ts",
@@ -24,7 +22,7 @@
     "@neondatabase/serverless": "^1.0.0",
     "@scalar/hono-api-reference": "^0.9.1",
     "dotenv": "^16.5.0",
-    "drizzle-kit": "0.31.1",
+    "drizzle-kit": "^0.31.4",
     "drizzle-orm": "0.44.0",
     "hono": "^4.7.10",
     "hono-openapi": "^0.4.8",

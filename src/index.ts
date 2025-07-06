@@ -106,7 +106,7 @@ app.get(
 					description: "Local server",
 				},
 				{
-					url: "https://dms-backend-axc5efgse0d5bxan.canadacentral-01.azurewebsites.net",
+					url: "https://dmsbackend-fdgthpbmdaagdnay.centralindia-01.azurewebsites.net",
 					description: "Production server",
 				}
 			],
